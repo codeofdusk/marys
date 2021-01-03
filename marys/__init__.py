@@ -167,7 +167,7 @@ class SubmenuContainer(MenuBase, list):
         if not content or content.isspace():
             title = TITLE_SYSTEM
             content = f"{self.venue} is currently unavailable!"
-        return Card(title, unidecode(content))
+        return Card(title, content)
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
@@ -183,6 +183,10 @@ class Submenu(MenuBase, dict):
         self.container = container
         self.start = tz.localize(dateparser.parse(self["startdate"]))
         self.end = tz.localize(dateparser.parse(self["enddate"]))
+        if "description" in self:
+            self["cleaned_description"] = (
+                unidecode(unescape(self["description"])).replace("\r\n", "\n").strip()
+            )
 
     def __repr__(self):
         return f"{self.container.venue} {self['title']} {super().__repr__()}"
@@ -197,7 +201,7 @@ class Submenu(MenuBase, dict):
         if html:
             return Card(title, self["html_description"].strip())
         else:
-            return Card(title, unescape(self["description"]).strip())
+            return Card(title, self["cleaned_description"])
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         tr = f"from {' to '.join(self['short_time'].split(' - '))}"
@@ -205,8 +209,8 @@ class Submenu(MenuBase, dict):
         # Logic imported from skill codebase
         # Todo: Clean this up when more complete test data is available
         t = (
-            unidecode(unescape(i.translate({ord("\t"): None})))
-            for i in self["description"].strip().split("\r\n")
+            i.translate({ord("\t"): None})
+            for i in self["cleaned_description"].strip().split("\n")
             if (i != "" and not i[0:3].lower() == "(v)")
         )
         t = (
