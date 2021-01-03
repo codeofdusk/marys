@@ -11,6 +11,7 @@ from unidecode import unidecode
 tz = pytz.timezone("US/Eastern")
 Card = namedtuple("Card", ("title", "content"))
 DINING_ENDPOINT = "https://dash.swarthmore.edu/dining_json"
+TITLE_SYSTEM = "Menu"
 
 
 class SSMLDialect(Enum):
@@ -110,15 +111,16 @@ class Menu(MenuBase, UserDict):
 
     def card(self, html=False):
         if not self:
-            return Card("Menu", Menu.EMPTY_MSG)
+            return Card(TITLE_SYSTEM, Menu.EMPTY_MSG)
         content = ""
         for i in self.containers:
             c = i.card(html=html)
+            title = c.title if c.title != TITLE_SYSTEM else ""
             if html:
-                content += f"<h2>{c.title}</h2>{c.content}\n"
+                content += f"<h2>{title}</h2>{c.content}\n"
             else:
-                content += f"{c.title}\n{c.content}\n"
-        return Card("Menu", content)
+                content += f"{title}\n{c.content}\n"
+        return Card(TITLE_SYSTEM, content)
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
@@ -159,11 +161,13 @@ class SubmenuContainer(MenuBase, list):
             if html:
                 text = f"<h3>{card.title}</h3><p>{card.content}</p>\n"
             else:
-                text = f"{card.title}\n{card.content}\n\n"
+                text = f"{card.title}\n{card.content}\n"
             content += text
+        title = f"At {self.venue}"
         if not content or content.isspace():
+            title = TITLE_SYSTEM
             content = f"{self.venue} is currently unavailable!"
-        return Card(f"At {self.venue}", unidecode(content))
+        return Card(title, unidecode(content))
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
@@ -191,9 +195,9 @@ class Submenu(MenuBase, dict):
     def card(self, html=False):
         title = f"{self['title']} ({self.start.strftime('%H:%M')}–{self.end.strftime('%H:%M')})"
         if html:
-            return Card(title, self["html_description"])
+            return Card(title, self["html_description"].strip())
         else:
-            return Card(title, unescape(self["description"]))
+            return Card(title, unescape(self["description"]).strip())
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         tr = f"from {' to '.join(self['short_time'].split(' - '))}"
