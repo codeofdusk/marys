@@ -103,7 +103,8 @@ class Menu(MenuBase, UserDict):
 
     @property
     def containers(self):
-        return (i for i in self.values() if isinstance(i, SubmenuContainer))
+        "Returns all non-empty submenu containers in this menu."
+        return (i for i in self.values() if i and isinstance(i, SubmenuContainer))
 
     @property
     def open(self):
