@@ -89,8 +89,11 @@ class Menu(MenuBase, UserDict):
             return super().__getitem__(item)
 
     def __str__(self):
-        "Override of MenuBase.__str__ that just returns the card content, as the card title conveys no useful information."
-        return self.card(html=False).content
+        "Override of MenuBase.__str__ that just returns the card content in menus with multiple containers, as the card title conveys no useful information."
+        if len(self.containers) == 1:
+            return super().__str__()
+        else:
+            return self.card(html=False).content
 
     def filter(self, func):
         res = defaultdict(list)
@@ -104,24 +107,27 @@ class Menu(MenuBase, UserDict):
     @property
     def containers(self):
         "Returns all non-empty submenu containers in this menu."
-        return (i for i in self.values() if i and isinstance(i, SubmenuContainer))
+        return [i for i in self.values() if i and isinstance(i, SubmenuContainer)]
 
     @property
     def open(self):
         return any((i.open for i in self.containers))
 
     def card(self, html=False):
+        if len(self.containers) == 1:
+            return self.containers[0].card(
+                html=html
+            )  # Fall back to the container-level method for nicer presentation
         if not self:
             return Card(TITLE_SYSTEM, Menu.EMPTY_MSG)
         content = ""
         for i in self.containers:
             c = i.card(html=html)
-            title = c.title if c.title != TITLE_SYSTEM else ""
             if html:
-                content += f"<h2>{title}</h2>{c.content}\n"
+                content += f"<h2>{c.title}</h2>{c.content}\n"
             else:
-                content += f"{title}\n{c.content}\n"
-        return Card(TITLE_SYSTEM, content)
+                content += f"{c.title}\n{c.content}\n"
+        return Card(title, content)
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
