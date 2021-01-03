@@ -197,7 +197,7 @@ class Submenu(MenuBase, dict):
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         tr = f"from {' to '.join(self['short_time'].split(' - '))}"
-        res = f"For {self['title'].lower()} ({tr}) <break/>"
+        res = f"{self['title'].capitalize()} ({tr}) <break/>"
         # Logic imported from skill codebase
         # Todo: Clean this up when more complete test data is available
         t = (
