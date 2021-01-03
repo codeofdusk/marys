@@ -83,7 +83,8 @@ class Menu(MenuBase, UserDict):
                 lambda x: "unch" in x["title"].lower()
             )  # Hack to work around "brunch" on some days
         elif item == "current":
-            return self.filter(lambda x: x.open)
+            now = datetime.now(tz)
+            return self.filter(lambda x: now < x.end)
         else:
             return super().__getitem__(item)
 
