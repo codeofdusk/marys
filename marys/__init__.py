@@ -241,7 +241,7 @@ class Menu(MenuBase, UserDict):
                 content += f"<h2>{c.title}</h2>{c.content}\n"
             else:
                 content += f"{c.title}\n{c.content}\n"
-        return Card(title, content)
+        return Card(TITLE_SYSTEM, content)
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
