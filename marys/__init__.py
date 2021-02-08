@@ -1,4 +1,6 @@
+import aiohttp
 import pytz
+import requests
 
 from abc import ABC, abstractmethod
 from collections import defaultdict, namedtuple, UserDict
@@ -26,7 +28,7 @@ limitations under the Licence.
 If the terms of the licence pose serious difficulty for your use, please contact the author.
 """
 
-__version__ = "0.0.0"
+__version__ = "1.0.0"
 tz = pytz.timezone("US/Eastern")
 Card = namedtuple("Card", ("title", "content"))
 DINING_ENDPOINT = "https://dash.swarthmore.edu/dining_json"
@@ -189,8 +191,6 @@ class Menu(MenuBase, UserDict):
         """
         if data is None:
             # Retrieve menu synchronously
-            import requests
-
             data = requests.get(endpoint, headers=HTTP_HEADERS).json()
         for k, v in data.items():
             if isinstance(v, list):
@@ -202,8 +202,6 @@ class Menu(MenuBase, UserDict):
     @classmethod
     async def asynchronous(cls, endpoint: str = DINING_ENDPOINT):
         "Coroutine to asynchronously retrieve and instantiate a menu object. Used in python >= 3.6 concurrent (async/await) programs. If you don't know what this is you probably don't need it."
-        import aiohttp
-
         async with aiohttp.ClientSession() as session:
             async with session.get(endpoint, headers=HTTP_HEADERS) as resp:
                 data = await resp.json()
