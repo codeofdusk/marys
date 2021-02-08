@@ -9,10 +9,31 @@ from html import unescape
 from typing import Callable, List
 from unidecode import unidecode
 
+"""Marys Python library
+Copyright 2021 Bill Dengler
+
+Licensed under the Apache License, Version 2.0 (the "Licence");
+you may not use this file except in compliance with the Licence.
+You may obtain a copy of the Licence at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the Licence is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the Licence for the specific language governing permissions and
+limitations under the Licence.
+If the terms of the licence pose serious difficulty for your use, please contact the author.
+"""
+
+__version__ = "0.0.0"
 tz = pytz.timezone("US/Eastern")
 Card = namedtuple("Card", ("title", "content"))
 DINING_ENDPOINT = "https://dash.swarthmore.edu/dining_json"
 TITLE_SYSTEM = "Menu"
+HTTP_HEADERS = {
+    "User-Agent": f"Mozilla/5.0 (compatible; python-marys/{__version__}; +https://github.com/codeofdusk/marys)"
+}
 
 
 class SSMLDialect(Enum):
@@ -170,7 +191,7 @@ class Menu(MenuBase, UserDict):
             # Retrieve menu synchronously
             import requests
 
-            data = requests.get(endpoint).json()
+            data = requests.get(endpoint, headers=HTTP_HEADERS).json()
         for k, v in data.items():
             if isinstance(v, list):
                 data[k] = SubmenuContainer(k, v)
@@ -184,7 +205,7 @@ class Menu(MenuBase, UserDict):
         import aiohttp
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(endpoint) as resp:
+            async with session.get(endpoint, headers=HTTP_HEADERS) as resp:
                 data = await resp.json()
         return cls(data=data)
 
