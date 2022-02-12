@@ -65,8 +65,12 @@ class _HTMLToSSMLConverter(HTMLParser):
         self.data = ""
         super().__init__(*args, **kwargs)
 
+    def handle_starttag(self, tag, *args):
+        if tag == "br":
+            self.data += '<break strength="weak"/>'
+
     def handle_endtag(self, tag):
-        if tag in ("li", "br"):
+        if tag == "li":
             self.data += '<break strength="weak"/>'
 
     def handle_data(self, data):
