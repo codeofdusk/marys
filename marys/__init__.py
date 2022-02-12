@@ -232,7 +232,14 @@ class Menu(MenuBase, UserDict):
             return self.filter(
                 lambda x: "unch" in x["title"].lower()
             )  # Hack to work around "brunch" on some days
+        elif item == "now":
+            now = datetime.now(tz)
+            return self.filter(lambda x: x.start <= now <= x.end)
         elif item == "current":
+            # In older iterations of the API, "open door" was unlisted
+            # so it made more sense to provide both menus on now and up next.
+            # New users going forward probably want "now", but keeping this
+            # for backwards compat/if it's useful for some situations.
             now = datetime.now(tz)
             return self.filter(lambda x: now < x.end)
         else:
