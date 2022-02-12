@@ -66,14 +66,18 @@ class _HTMLToSSMLConverter(HTMLParser):
         super().__init__(*args, **kwargs)
 
     def handle_endtag(self, tag):
-        if tag == "li":
+        if tag in ("li", "br"):
             self.data += '<break strength="weak"/>'
 
     def handle_data(self, data):
         self.data += data
 
     def handle_entityref(self, ref):
-        self.data += f"&{ref};"
+        if ref == "nbsp":
+            # Amazon Alexa (and maybe others) don't like these.
+            self.data += " "
+        else:
+            self.data += f"&{ref};"
 
     def handle_charref(self, ref):
         return self.handle_entityref(ref)
