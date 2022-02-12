@@ -221,7 +221,9 @@ class Menu(MenuBase, UserDict):
         """
         if data is None:
             # Retrieve menu synchronously
-            data = requests.get(endpoint, headers=HTTP_HEADERS).json()
+            resp = requests.get(endpoint, headers=HTTP_HEADERS)
+            resp.raise_for_status()
+            data = resp.json()
         for k, v in data.items():
             if isinstance(v, list):
                 data[k] = SubmenuContainer(k, v)
