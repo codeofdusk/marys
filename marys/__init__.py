@@ -8,11 +8,12 @@ from datetime import datetime
 from dateutil import parser as dateparser
 from enum import Enum, auto
 from html import unescape
+from html.parser import HTMLParser
 from typing import Callable, List
 from unidecode import unidecode
 
 """Marys Python library
-Copyright 2021 Bill Dengler
+Copyright 2021–2022 Bill Dengler
 
 Licensed under the Apache License, Version 2.0 (the "Licence");
 you may not use this file except in compliance with the Licence.
@@ -28,7 +29,7 @@ limitations under the Licence.
 If the terms of the licence pose serious difficulty for your use, please contact the author.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 tz = pytz.timezone("US/Eastern")
 Card = namedtuple("Card", ("title", "content"))
 DINING_ENDPOINT = "https://dash.swarthmore.edu/dining_json"
@@ -55,6 +56,27 @@ def _sad_speech(msg: str, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         return f'<amazon:emotion name="disappointed" intensity="medium">{msg}</amazon:emotion>'
     else:
         return msg
+
+
+class _HTMLToSSMLConverter(HTMLParser):
+    "Internal utility class to assist with HTML -> SSML conversions."
+
+    def __init__(self, *args, **kwargs):
+        self.data = ""
+        super().__init__(*args, **kwargs)
+
+    def handle_endtag(self, tag):
+        if tag == "li":
+            self.data += '<break strength="weak"/>'
+
+    def handle_data(self, data):
+        self.data += data
+
+    def handle_entityref(self, ref):
+        self.data += f"&{ref};"
+
+    def handle_charref(self, ref):
+        return self.handle_entityref(ref)
 
 
 class MenuBase(ABC):
@@ -106,23 +128,18 @@ class Submenu(MenuBase, dict):
         if html:
             return Card(title, self["html_description"].strip())
         else:
-            return Card(title, self["cleaned_description"])
+            return Card(
+                title,
+                # Some assistants crash when encountering the & symbol
+                self["cleaned_description"].replace("&", "and"),
+            )
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         tr = f"from {' to '.join(self['short_time'].split(' - '))}"
-        res = f"{self['title'].capitalize()} ({tr}) <break/>"
-        # Logic imported from skill codebase
-        # Todo: Clean this up when more complete test data is available
-        t = (
-            i.translate({ord("\t"): None})
-            for i in self["cleaned_description"].strip().split("\n")
-            if (i != "" and not i[0:3].lower() == "(v)")
-        )
-        t = (
-            i.replace("(v)", "(vegan)").replace("$5.50", "for five dollars fifty")
-            for i in t
-        )
-        res += "<break/>".join(t)
+        res = f"{self['title'].capitalize()} ({tr}) <break strength=\"weak\"/>"
+        p = _HTMLToSSMLConverter(convert_charrefs=False)
+        p.feed(self["html_description"])
+        res += p.data
         return res
 
 
@@ -173,8 +190,9 @@ class SubmenuContainer(MenuBase, list):
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
             return _sad_speech(f"{self.venue} is currently unavailable!", dialect)
-        return f"At {self.venue}<break/>" + "<break/>".join(
-            [i.ssml(dialect=dialect) for i in self]
+        return (
+            f'At {self.venue}<break strength="weak"/>'
+            + '<break strength="weak"/>'.join([i.ssml(dialect=dialect) for i in self])
         )
 
 
@@ -265,4 +283,6 @@ class Menu(MenuBase, UserDict):
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
             return _sad_speech(Menu.EMPTY_MSG, dialect)
-        return "<break/>".join((i.ssml(dialect=dialect) for i in self.containers))
+        return '<break strength="weak"/>'.join(
+            (i.ssml(dialect=dialect) for i in self.containers)
+        )
