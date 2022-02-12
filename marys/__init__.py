@@ -194,6 +194,12 @@ class SubmenuContainer(MenuBase, list):
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
             return _sad_speech(f"{self.venue} is currently unavailable!", dialect)
+        if len(self) == 1:
+            inner = self[0]
+            if inner["title"].lower().endswith("open"):
+                # No need to say the venue first, as it's probably in the title
+                # of its only submenu.
+                return inner.ssml(dialect=dialect)
         return (
             f'At {self.venue}<break strength="weak"/>'
             + '<break strength="weak"/>'.join([i.ssml(dialect=dialect) for i in self])
