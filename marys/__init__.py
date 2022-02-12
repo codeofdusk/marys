@@ -1,5 +1,6 @@
 import aiohttp
 import pytz
+import re
 import requests
 
 from abc import ABC, abstractmethod
@@ -37,6 +38,8 @@ TITLE_SYSTEM = "Menu"
 HTTP_HEADERS = {
     "User-Agent": f"Mozilla/5.0 (compatible; python-marys/{__version__}; +https://github.com/codeofdusk/marys)"
 }
+
+diet_expr = re.compile("::(.*?)::")
 
 
 class SSMLDialect(Enum):
@@ -134,13 +137,12 @@ class Submenu(MenuBase, dict):
     def card(self, html=False):
         title = f"{self['title']} ({self.start.strftime('%H:%M')}–{self.end.strftime('%H:%M')})"
         if html:
-            return Card(title, self["html_description"].strip())
+            content = self["html_description"].strip()
         else:
-            return Card(
-                title,
-                # Some assistants crash when encountering the & symbol
-                self["cleaned_description"].replace("&", "and"),
-            )
+            # Some assistants crash when encountering the & symbol
+            content = self["cleaned_description"].replace("&", "and")
+        content = diet_expr.sub("(\\1)", content)
+        return Card(title, content)
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         tr = f"from {' to '.join(self['short_time'].split(' - '))}"
