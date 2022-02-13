@@ -8,7 +8,7 @@ from collections import defaultdict, namedtuple, UserDict
 from datetime import datetime
 from dateutil import parser as dateparser
 from enum import Enum, auto
-from html import unescape
+from html import escape, unescape
 from html.parser import HTMLParser
 from typing import Callable, List
 from unidecode import unidecode
@@ -146,7 +146,7 @@ class Submenu(MenuBase, dict):
 
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         tr = f"from {' to '.join(self['short_time'].split(' - '))}"
-        res = f"{self['title'].capitalize()} ({tr}) <break strength=\"weak\"/>"
+        res = f"{escape(self['title']).capitalize()} ({tr}) <break strength=\"weak\"/>"
         p = _HTMLToSSMLConverter(convert_charrefs=False)
         p.feed(self["html_description"])
         res += p.data
