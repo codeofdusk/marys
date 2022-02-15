@@ -137,10 +137,14 @@ class Submenu(MenuBase, dict):
     def card(self, html=False):
         title = f"{self['title']} ({self.start.strftime('%H:%M')}–{self.end.strftime('%H:%M')})"
         if html:
-            content = self["html_description"].strip()
+            content = (
+                self["html_description"]
+                .strip()
+                .replace("<html-blob>", "")
+                .replace("</html-blob>", "")
+            )
         else:
-            # Some assistants crash when encountering the & symbol
-            content = self["cleaned_description"].replace("&", "and")
+            content = self["cleaned_description"]
         content = diet_expr.sub("(\\1)", content)
         return Card(title, content)
 
