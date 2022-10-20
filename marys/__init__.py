@@ -30,7 +30,7 @@ limitations under the Licence.
 If the terms of the licence pose serious difficulty for your use, please contact the author.
 """
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 tz = pytz.timezone("US/Eastern")
 Card = namedtuple("Card", ("title", "content"))
 DINING_ENDPOINT = "https://dash.swarthmore.edu/dining_json"
