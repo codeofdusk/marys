@@ -43,7 +43,7 @@ HTTP_HEADERS = {
 diet_expr = re.compile("::(.*?)::")
 
 # A regex to match codes to remove from speech to ease listening
-codes_not_to_speak = re.compile("::egg::|::milk::|::soy::|::treenut::|::wheat::")
+codes_not_to_speak = re.compile("::egg::|::milk::|::soy::|::tree nut::|::wheat::")
 
 
 class SSMLDialect(Enum):
@@ -68,21 +68,21 @@ def _sad_speech(msg: str, dialect: SSMLDialect = SSMLDialect.DEFAULT):
 class _HTMLToSSMLConverter(HTMLParser):
     "Internal utility class to assist with HTML -> SSML conversions."
 
-    WEAK_BREAK = '<break strength="weak"/>'
+    MEDIUM_BREAK = '<break strength="medium"/>'
 
     def __init__(self, *args, **kwargs):
         self.data = ""
         super().__init__(*args, **kwargs)
 
     def handle_starttag(self, tag, *args):
-        if tag == "br" and not self.data.endswith(_HTMLToSSMLConverter.WEAK_BREAK):
-            self.data += _HTMLToSSMLConverter.WEAK_BREAK
+        if tag == "br" and not self.data.endswith(_HTMLToSSMLConverter.MEDIUM_BREAK):
+            self.data += _HTMLToSSMLConverter.MEDIUM_BREAK
 
     def handle_endtag(self, tag):
         if tag in ("li", "span") and not self.data.endswith(
-            _HTMLToSSMLConverter.WEAK_BREAK
+            _HTMLToSSMLConverter.MEDIUM_BREAK
         ):
-            self.data += _HTMLToSSMLConverter.WEAK_BREAK
+            self.data += _HTMLToSSMLConverter.MEDIUM_BREAK
 
     def handle_data(self, data):
         self.data += codes_not_to_speak.sub("", data)
@@ -162,8 +162,8 @@ class Submenu(MenuBase, dict):
         p = _HTMLToSSMLConverter(convert_charrefs=False)
         p.feed(self["html_description"])
         res += p.data
-        if res.endswith(_HTMLToSSMLConverter.WEAK_BREAK):
-            res = res[: len(_HTMLToSSMLConverter.WEAK_BREAK) * -1]
+        if res.endswith(_HTMLToSSMLConverter.MEDIUM_BREAK):
+            res = res[: len(_HTMLToSSMLConverter.MEDIUM_BREAK) * -1]
         return res
 
 
