@@ -39,7 +39,11 @@ HTTP_HEADERS = {
     "User-Agent": f"Mozilla/5.0 (compatible; python-marys/{__version__}; +https://github.com/codeofdusk/marys)"
 }
 
+# A regex to find dietary codes
 diet_expr = re.compile("::(.*?)::")
+
+# A regex to match codes to remove from speech to ease listening
+codes_not_to_speak = re.compile("::egg::|::milk::|::soy::|::treenut::|::wheat::")
 
 
 class SSMLDialect(Enum):
@@ -64,20 +68,24 @@ def _sad_speech(msg: str, dialect: SSMLDialect = SSMLDialect.DEFAULT):
 class _HTMLToSSMLConverter(HTMLParser):
     "Internal utility class to assist with HTML -> SSML conversions."
 
+    WEAK_BREAK = '<break strength="weak"/>'
+
     def __init__(self, *args, **kwargs):
         self.data = ""
         super().__init__(*args, **kwargs)
 
     def handle_starttag(self, tag, *args):
-        if tag == "br":
-            self.data += '<break strength="weak"/>'
+        if tag == "br" and not self.data.endswith(_HTMLToSSMLConverter.WEAK_BREAK):
+            self.data += _HTMLToSSMLConverter.WEAK_BREAK
 
     def handle_endtag(self, tag):
-        if tag == "li":
-            self.data += '<break strength="weak"/>'
+        if tag in ("li", "span") and not self.data.endswith(
+            _HTMLToSSMLConverter.WEAK_BREAK
+        ):
+            self.data += _HTMLToSSMLConverter.WEAK_BREAK
 
     def handle_data(self, data):
-        self.data += data
+        self.data += codes_not_to_speak.sub("", data)
 
     def handle_entityref(self, ref):
         if ref == "nbsp":
@@ -154,6 +162,8 @@ class Submenu(MenuBase, dict):
         p = _HTMLToSSMLConverter(convert_charrefs=False)
         p.feed(self["html_description"])
         res += p.data
+        if res.endswith(_HTMLToSSMLConverter.WEAK_BREAK):
+            res = res[: len(_HTMLToSSMLConverter.WEAK_BREAK) * -1]
         return res
 
 
@@ -205,7 +215,7 @@ class SubmenuContainer(MenuBase, list):
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
             return _sad_speech(f"{self.venue} is currently unavailable!", dialect)
-        res = '<break strength="weak"/>'.join([i.ssml(dialect=dialect) for i in self])
+        res = '<break strength="strong"/>'.join([i.ssml(dialect=dialect) for i in self])
         if not self[0]["title"].lower().endswith("open"):
             # We need to say the venue first, as it's probably not in the title
             # of its first submenu.
@@ -235,7 +245,7 @@ class Menu(MenuBase, UserDict):
                 # However, the API may indicate that it's closed 24/7.
                 # Don't include this response.
                 continue
-            if isinstance(v, list):
+            elif isinstance(v, list):
                 data[k] = SubmenuContainer(k, v)
             elif isinstance(v, dict):
                 data[k] = Menu(data=v)
@@ -319,6 +329,6 @@ class Menu(MenuBase, UserDict):
     def ssml(self, dialect: SSMLDialect = SSMLDialect.DEFAULT):
         if not self:
             return _sad_speech(Menu.EMPTY_MSG, dialect)
-        return '<break strength="weak"/>'.join(
+        return '<break strength="x-strong"/>'.join(
             (i.ssml(dialect=dialect) for i in self.containers)
         )
