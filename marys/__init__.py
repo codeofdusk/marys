@@ -176,6 +176,7 @@ class SubmenuContainer(MenuBase, list):
             "essies": "Essie Mae's",
             "kohlberg": "Kohlberg coffee bar",
             "science_center": "Science Center coffee bar",
+            "dining_center": "The Dining Center",
         }
         if self._venue in API_TO_FRIENDLY:
             return API_TO_FRIENDLY[self._venue]
@@ -229,10 +230,18 @@ class Menu(MenuBase, UserDict):
             resp.raise_for_status()
             data = resp.json()
         for k, v in data.items():
+            if k == "sharples":
+                # As of October 2022, Sharples is no longer a dining hall!
+                # However, the API may indicate that it's closed 24/7.
+                # Don't include this response.
+                continue
             if isinstance(v, list):
                 data[k] = SubmenuContainer(k, v)
             elif isinstance(v, dict):
                 data[k] = Menu(data=v)
+        # As of October 2022, Sharples is no longer a dining hall!
+        # For backwards compat, include an empty SubmenuContainer for it.
+        data["sharples"] = SubmenuContainer("sharples", [])
         super().__init__(data)
 
     @classmethod
