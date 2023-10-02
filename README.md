@@ -110,8 +110,30 @@ Card(title='At Sharples Dining Hall', content="Breakfast (07:30–09:30)\nSoup I
 ## Asynchronous programs
 For programs using Python's coroutine (`async`/`await`) syntax, a coroutine is provided to asynchronously construct a `Menu` object. If your programs do not use the `async` or `await` keywords, you don't need to use this.
 
+For example, Marys can be added to a [discord.py](https://discordpy.readthedocs.io) bot with something like the following (which uses old-style commands, but could easily be adapted for slash commands).
+
 ```python
-m = await marys.Menu.asynchronous()
+import discord
+import marys
+
+from discord.ext import commands
+
+
+class Marys(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    async def marys(self, ctx, query="current"):
+        """Request Swarthmore dining menus"""
+        m = await marys.Menu.asynchronous()
+        resp = await ctx.send(str(m[query]))
+```
+
+``` Python
+# Then, in the entry point/main function of your bot,
+# import the Marys class defined earlier, then
+await bot.add_cog(Marys(bot))
 ```
 
 ## What's with the name?
